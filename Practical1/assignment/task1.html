@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TF.js Regression & Plotting</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@latest"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #container { max-width: 800px; margin: auto; }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <h1>Linear Regression & Visualization CM23010</h1>
+        <p>This model trains on noisy data and plots the final predictions against the truth.</p>
+    </div>
+
+    <script>
+        async function run() {
+            // 1. Generate Synthetic Data with some random noise
+            const xs = tf.randomUniform([100, 1], -1, 1);
+            // y = 5x + 3 + (noise)
+            const ys = xs.mul(5).add(3).add(tf.randomNormal([100, 1], 0, 0.2));
+
+            // 2. Setup Model Architecture
+            const model = tf.sequential();
+            model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+            model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+
+            // 3. Prepare tfjs-vis to show training progress
+            const container = { name: 'Model Training', tab: 'Training' };
+            
+            // 4. Train the model
+            await model.fit(xs, ys, {
+                epochs: 50,
+                callbacks: tfvis.show.fitCallbacks(container, ['loss'])
+            });
+
+            // 5. Generate Predictions for plotting
+            const xTest = tf.linspace(-1, 1, 100).reshape([100, 1]);
+            const yPred = model.predict(xTest);
+
+            // 6. Plot Predicted vs Actual Values
+            const xArr = await xs.data();
+            const yArr = await ys.data();
+            const xTestArr = await xTest.data();
+            const yPredArr = await yPred.data();
+
+            const actualSeries = Array.from(xArr).map((x, i) => ({x, y: yArr[i]}));
+            const predictedSeries = Array.from(xTestArr).map((x, i) => ({x, y: yPredArr[i]}));
+
+            const data = { values: [actualSeries, predictedSeries], series: ['Actual Data', 'Model Prediction'] };
+            
+            tfvis.render.scatterplot(
+                { name: 'Final Results: Actual vs Predicted' },
+                data,
+                { xLabel: 'X', yLabel: 'Y', height: 300 }
+            );
+        }
+
+        run();
+    </script>
+</body>
+</html>

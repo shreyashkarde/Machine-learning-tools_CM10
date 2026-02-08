@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Validation Lab</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        .result-table th { background-color: #f4f4f4; }
+        .success { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Unseen Data Prediction CM23010</h1>
+    <div id="output-table">Training model... please wait.</div>
+
+    <script>
+        async function evaluateModel() {
+            // 1. Training Data (y = 5x + 10)
+            const xs = tf.tensor2d([0, 1, 2, 3, 4, 5], [6, 1]);
+            const ys = tf.tensor2d([10, 15, 20, 25, 30, 35], [6, 1]);
+
+            // 2. Build and Train
+            const model = tf.sequential();
+            model.add(tf.layers.dense({ units: 1, inputShape: [1] }));
+            model.compile({ optimizer: tf.train.sgd(0.01), loss: 'meanSquaredError' });
+            
+            await model.fit(xs, ys, { epochs: 500, verbose: 0 });
+
+            // 3. Unseen Test Inputs
+            const unseenInputs = [10, 20, -5, 100];
+            const expectedOutputs = unseenInputs.map(x => 5 * x + 10);
+            
+            // Perform Predictions
+            const testTensor = tf.tensor2d(unseenInputs, [unseenInputs.length, 1]);
+            const predictions = model.predict(testTensor);
+            const predictedValues = predictions.dataSync();
+
+            // 4. Compare and Display
+            let html = `
+                <table class="result-table">
+                    <tr>
+                        <th>Input (x)</th>
+                        <th>Expected (y)</th>
+                        <th>Predicted (y)</th>
+                        <th>Error (Abs Diff)</th>
+                    </tr>`;
+
+            unseenInputs.forEach((x, i) => {
+                const error = Math.abs(expectedOutputs[i] - predictedValues[i]);
+                html += `
+                    <tr>
+                        <td>${x}</td>
+                        <td>${expectedOutputs[i]}</td>
+                        <td>${predictedValues[i].toFixed(2)}</td>
+                        <td>${error.toFixed(4)}</td>
+                    </tr>`;
+            });
+
+            html += `</table>`;
+            document.getElementById('output-table').innerHTML = html;
+        }
+
+        evaluateModel();
+    </script>
+</body>
+</html>

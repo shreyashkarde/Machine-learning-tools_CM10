@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Learning Rate Experiment</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@latest"></script>
+</head>
+<body>
+    <h1>Learning Rate Comparison CM23010</h1>
+    <p>Check the <strong>Visor</strong> (left side) to see the different convergence speeds.</p>
+
+    <script>
+        async function trainModel(learningRate, containerName) {
+            const xs = tf.randomUniform([100, 1], -1, 1);
+            const ys = xs.mul(2).add(1); // y = 2x + 1
+
+            const model = tf.sequential();
+            model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+
+            // Setting the specific learning rate in the optimizer
+            const optimizer = tf.train.sgd(learningRate);
+            model.compile({optimizer: optimizer, loss: 'meanSquaredError'});
+
+            await model.fit(xs, ys, {
+                epochs: 50,
+                callbacks: tfvis.show.fitCallbacks(
+                    { name: containerName, tab: 'Experiments' },
+                    ['loss'],
+                    { callbacks: ['onEpochEnd'] }
+                )
+            });
+        }
+
+        async function runExperiment() {
+            // Open the visor
+            tfvis.visor().open();
+
+            // 1. Slow Learning Rate
+            console.log("Training Slow...");
+            await trainModel(0.001, 'LR: 0.001 (Very Slow)');
+
+            // 2. Ideal Learning Rate
+            console.log("Training Ideal...");
+            await trainModel(0.1, 'LR: 0.1 (Optimal)');
+
+            // 3. High Learning Rate
+            console.log("Training High...");
+            await trainModel(1.0, 'LR: 1.0 (Diverging/Oscillating)');
+        }
+
+        runExperiment();
+    </script>
+</body>
+</html>
